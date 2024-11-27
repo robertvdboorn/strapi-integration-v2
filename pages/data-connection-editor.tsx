@@ -20,7 +20,7 @@ const DataConnectionEditor: FC = () => {
   const { value, setValue, metadata } = useMeshLocation<'dataSource'>();
 
   metadata.enableUnpublishedMode = true;
-  
+
   const { apiUrl, apiToken } = useMemo(() => {
     const config = value.custom as DataSourceConfig;
     return {
@@ -43,7 +43,7 @@ const DataConnectionEditor: FC = () => {
         const newConfig = { ...currentConfig, ...updates };
 
         const customPublic: DataSourceCustomPublicConfig = {
-          apiUrl: newConfig.apiUrl,
+          apiUrl: newConfig.apiUrl + '/api',
           apiToken: newConfig.apiToken,
         };
 
