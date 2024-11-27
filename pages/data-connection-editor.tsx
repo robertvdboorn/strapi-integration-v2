@@ -20,9 +20,7 @@ export type DataSourceCustomPublicConfig = Pick<
 const TRUE_VALIDATION_RESULT: ValidationResult = { isValid: true };
 
 const DataConnectionEditor: FC = () => {
-  const { value, setValue, metadata } = useMeshLocation<"dataSource">();
-
-  metadata.enableUnpublishedMode = true;
+  const { value, setValue } = useMeshLocation<"dataSource">();
 
   const { apiUrl, apiToken } = useMemo(() => {
     const config = value.custom as DataSourceConfig;
@@ -60,6 +58,7 @@ const DataConnectionEditor: FC = () => {
           baseUrl: `${sanitizedBaseUrl}/api`,
           custom: newConfig,
           customPublic,
+          enableUnpublishedMode: true,
           variants: {
             unpublished: {
               baseUrl: `${sanitizedBaseUrl}/api`,
