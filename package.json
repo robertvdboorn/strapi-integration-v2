@@ -14,16 +14,18 @@
   },
   "dependencies": {
     "@uniformdev/canvas": "19.207.0",
-    "@uniformdev/mesh-sdk-react": "19.207.0",
     "@uniformdev/design-system": "19.207.0",
+    "@uniformdev/mesh-sdk-react": "19.207.0",
     "next": "13.5.6",
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "react-use": "17.5.0"
   },
   "devDependencies": {
+    "@types/node": "^22.10.0",
     "@types/react": "18.2.79",
-    "@types/react-dom": "18.2.19"
+    "@types/react-dom": "18.2.19",
+    "typescript": "^5.7.2"
   },
   "packageManager": "pnpm@8.15.4",
   "engines": {
