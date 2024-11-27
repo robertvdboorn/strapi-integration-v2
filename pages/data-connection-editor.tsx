@@ -43,7 +43,7 @@ const DataConnectionEditor: FC = () => {
         const newConfig = { ...currentConfig, ...updates };
 
         const customPublic: DataSourceCustomPublicConfig = {
-          apiUrl: newConfig.apiUrl + '/api',
+          apiUrl: newConfig.apiUrl,
           apiToken: newConfig.apiToken,
         };
 
@@ -51,12 +51,12 @@ const DataConnectionEditor: FC = () => {
 
         const newValue: DataSourceLocationValue = {
           ...current,
-          baseUrl,
+          baseUrl: `${baseUrl}/api`,
           custom: newConfig,
           customPublic,
           variants: {
             unpublished: {
-              baseUrl: apiUrl,
+              baseUrl: `${baseUrl}/api`,
               parameters: [
                 {
                   key: 'status',
