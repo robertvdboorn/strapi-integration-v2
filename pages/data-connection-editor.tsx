@@ -17,8 +17,10 @@ export type DataSourceCustomPublicConfig = Pick<DataSourceConfig, 'apiUrl' | 'ap
 const TRUE_VALIDATION_RESULT: ValidationResult = { isValid: true };
 
 const DataConnectionEditor: FC = () => {
-  const { value, setValue } = useMeshLocation<'dataSource'>();
+  const { value, setValue, metadata } = useMeshLocation<'dataSource'>();
 
+  metadata.enableUnpublishedMode = true;
+  
   const { apiUrl, apiToken } = useMemo(() => {
     const config = value.custom as DataSourceConfig;
     return {
@@ -84,10 +86,10 @@ const DataConnectionEditor: FC = () => {
         id="apiUrl"
         name="apiUrl"
         label="API URL"
-        placeholder="https://your-strapi-api.com/api"
+        placeholder="https://your-strapi-api.com/"
         value={apiUrl}
         onChange={(e) => handleUpdate({ apiUrl: e.currentTarget.value })}
-        caption="The base URL of your Strapi API (e.g., https://your-strapi-api.com/api)"
+        caption="The base URL of your Strapi API (e.g., https://your-strapi-api.com/)"
       />
       <Input
         id="apiToken"
