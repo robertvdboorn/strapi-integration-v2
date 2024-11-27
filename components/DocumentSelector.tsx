@@ -30,7 +30,15 @@ interface DocumentSelectorProps {
 interface StrapiEntry {
   id: string;
   documentId: string;
+  publishedAt: string;
   [key: string]: any;
+}
+
+interface PaginationInfo {
+  page: number;
+  pageSize: number;
+  pageCount: number;
+  total: number;
 }
 
 export const DocumentSelector: React.FC<DocumentSelectorProps> = ({
@@ -45,6 +53,7 @@ export const DocumentSelector: React.FC<DocumentSelectorProps> = ({
 }) => {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const { setValue } = useMeshLocation('dataResource');
+  const [allEntries, setAllEntries] = useState<StrapiEntry[]>([]);
 
   useEffect(() => {
     if (allowedContentTypes.length === 1) {
@@ -56,30 +65,51 @@ export const DocumentSelector: React.FC<DocumentSelectorProps> = ({
   const selectedPluralName =
     selectedIndex !== null ? (allowedContentTypesNames ? allowedContentTypesNames[selectedIndex] : '') : '';
 
-  // Fetch entries based on the selected content type
+  // Fetch all entries based on the selected content type
+  const fetchAllEntries = async (pluralName: string): Promise<StrapiEntry[]> => {
+    if (!getDataResource) return [];
+
+    let allEntries: StrapiEntry[] = [];
+    let currentPage = 1;
+    let hasMorePages = true;
+
+    while (hasMorePages) {
+      const response: { data?: StrapiEntry[]; meta?: { pagination: PaginationInfo } } = await getDataResource({
+        headers: [
+          {
+            key: 'Authorization',
+            value: `Bearer ${apiToken}`,
+          },
+        ],
+        path: `/${pluralName}?populate=*&pagination[page]=${currentPage}&pagination[pageSize]=100`,
+        method: 'GET' as const,
+      });
+
+      if (!response?.data) {
+        throw new Error('Failed to fetch entries or unexpected response structure');
+      }
+
+      allEntries = [...allEntries, ...response.data];
+
+      if (response.meta?.pagination) {
+        hasMorePages = currentPage < response.meta.pagination.pageCount;
+        currentPage++;
+      } else {
+        hasMorePages = false;
+      }
+    }
+
+    return allEntries;
+  };
+
   const {
-    value: entries = [],
     loading: loadingEntries,
     error: errorEntries,
   } = useAsync(async () => {
-    if (!selectedPluralName || !getDataResource) return [];
+    if (!selectedPluralName) return;
 
-    const response: { data?: StrapiEntry[] } = await getDataResource({
-      headers: [
-        {
-          key: 'Authorization',
-          value: `Bearer ${apiToken}`,
-        },
-      ],
-      path: `/${selectedPluralName}?populate=*`,
-      method: 'GET' as const,
-    });
-
-    if (!response?.data) {
-      throw new Error('Failed to fetch entries or unexpected response structure');
-    }
-
-    return response.data as StrapiEntry[];
+    const entries = await fetchAllEntries(selectedPluralName);
+    setAllEntries(entries);
   }, [getDataResource, apiToken, selectedPluralName]);
 
   // Fetch available content types directly within the component
@@ -146,6 +176,17 @@ export const DocumentSelector: React.FC<DocumentSelectorProps> = ({
     }/${id}`;
   };
 
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleString(undefined, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    });
+  };
+
   if (loadingEntries || loadingContentTypes) {
     return <LoadingOverlay isActive />;
   }
@@ -200,7 +241,7 @@ export const DocumentSelector: React.FC<DocumentSelectorProps> = ({
           padding: '8px',
         }}
       >
-        {entries.map((entry) => (
+        {allEntries.map((entry) => (
           <div
             key={entry.documentId}
             style={{
@@ -232,7 +273,13 @@ export const DocumentSelector: React.FC<DocumentSelectorProps> = ({
                   style={{ marginRight: '10px', borderRadius: '4px' }}
                 />
               )}
-              <span>{entry[displayField] || 'Untitled'}</span>
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <span>{entry[displayField] || 'Untitled'}</span>
+                <span style={{ fontSize: '0.75em', color: '#666' }}>
+                  Last published: {formatDate(entry.publishedAt)}
+                </span>
+                <span style={{ fontSize: '0.75em', color: '#666' }}>Document ID: {entry.documentId}</span>
+              </div>
             </div>
             <a
               href={getEditLink(selectedContentType, entry.documentId)}

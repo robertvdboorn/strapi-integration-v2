@@ -2,7 +2,7 @@
   "name": "@uniformdev/mesh-app-strapi-2",
   "version": "0.0.0",
   "scripts": {
-    "dev": "cross-env PORT=4062 next dev",
+    "dev": "next dev --port 4062",
     "build": "next build",
     "export": "next export",
     "start": "next start --port 4062",
