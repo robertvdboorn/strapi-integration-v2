@@ -1,0 +1,35 @@
+{
+  "type": "strapingm",
+  "displayName": "Strapi v2",
+  "logoIconUrl": "https://strapi.mesh.uniform.app/strapi-logo.png",
+  "badgeIconUrl": "https://strapi.mesh.uniform.app/strapi-badge.png",
+  "category": "unknown",
+  "baseLocationUrl": "http://localhost:4062",
+  "locations": {
+    "install": {
+      "description": [
+        "Strapi is the leading open-source headless CMS. It is 100% JavaScript, fully customizable and developer-first.",
+        "Integrating Uniform with <a href=\"https://strapi.io/\" target=\"_blank\" rel=\"noreferrer\" class=\"text-primary underline\">Strapi</a> allows business users to have complete control over the presentation layer compositions assembled from the existing product content from Strapi without losing the freedom and flexibility.",
+        "Uniform allows business users to personalize and A/B test product content coming from Strapi without a developer effort."
+      ],
+      "informationUrl": "https://docs.uniform.app/integrations/content/strapi/add-uniform-integration"
+    },
+    "settings": {
+      "url": "/settings"
+    },
+    "dataConnectors": [
+      {
+        "type": "strapi-data-connection",
+        "displayName": "StrapiV2",
+        "dataSourceEditorUrl": "/data-connection-editor",
+        "dataArchetypes": {
+          "singleDocument": {
+            "displayName": "Single Document",
+            "typeEditorUrl": "/data-types/single-document-type-editor",
+            "dataEditorUrl": "/data-types/single-document-data-editor"
+          }
+        }
+      }
+    ]
+  }
+}
