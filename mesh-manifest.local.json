@@ -1,0 +1,24 @@
+{
+  "type": "strapingm",
+  "displayName": "Strapi v2",
+  "logoIconUrl": "https://strapi.mesh.uniform.app/strapi-logo.png",
+  "badgeIconUrl": "https://strapi.mesh.uniform.app/strapi-badge.png",
+  "category": "unknown",
+  "baseLocationUrl": "http://localhost:4062",
+  "locations": {
+    "dataConnectors": [
+      {
+        "type": "strapi-data-connection",
+        "displayName": "StrapiV2",
+        "dataSourceEditorUrl": "/data-connection-editor",
+        "dataArchetypes": {
+          "singleDocument": {
+            "displayName": "Single Document",
+            "typeEditorUrl": "/data-types/single-document-type-editor",
+            "dataEditorUrl": "/data-types/single-document-data-editor"
+          }
+        }
+      }
+    ]
+  }
+}
