@@ -1,31 +1,34 @@
-import { FC, useCallback, useEffect, useMemo } from 'react';
+import { FC, useCallback, useEffect, useMemo } from "react";
 import {
   useMeshLocation,
   DataSourceLocationValue,
   Input,
   ValidationResult,
-} from '@uniformdev/mesh-sdk-react';
-import { VerticalRhythm } from '@uniformdev/design-system';
+} from "@uniformdev/mesh-sdk-react";
+import { VerticalRhythm } from "@uniformdev/design-system";
 
 export type DataSourceConfig = {
   apiUrl: string;
   apiToken: string;
 };
 
-export type DataSourceCustomPublicConfig = Pick<DataSourceConfig, 'apiUrl' | 'apiToken'>;
+export type DataSourceCustomPublicConfig = Pick<
+  DataSourceConfig,
+  "apiUrl" | "apiToken"
+>;
 
 const TRUE_VALIDATION_RESULT: ValidationResult = { isValid: true };
 
 const DataConnectionEditor: FC = () => {
-  const { value, setValue, metadata } = useMeshLocation<'dataSource'>();
+  const { value, setValue, metadata } = useMeshLocation<"dataSource">();
 
   metadata.enableUnpublishedMode = true;
 
   const { apiUrl, apiToken } = useMemo(() => {
     const config = value.custom as DataSourceConfig;
     return {
-      apiUrl: config?.apiUrl || '',
-      apiToken: config?.apiToken || '',
+      apiUrl: config?.apiUrl || "",
+      apiToken: config?.apiToken || "",
     };
   }, [value.custom]);
 
@@ -47,20 +50,23 @@ const DataConnectionEditor: FC = () => {
           apiToken: newConfig.apiToken,
         };
 
-        const baseUrl = apiUrl;
+        // Ensure baseUrl ends correctly
+        const sanitizedBaseUrl = newConfig.apiUrl.endsWith("/")
+          ? newConfig.apiUrl.slice(0, -1)
+          : newConfig.apiUrl;
 
         const newValue: DataSourceLocationValue = {
           ...current,
-          baseUrl: `${baseUrl}/api`,
+          baseUrl: `${sanitizedBaseUrl}/api`,
           custom: newConfig,
           customPublic,
           variants: {
             unpublished: {
-              baseUrl: `${baseUrl}/api`,
+              baseUrl: `${sanitizedBaseUrl}/api`,
               parameters: [
                 {
-                  key: 'status',
-                  value: 'draft',
+                  key: "status",
+                  value: "draft",
                 },
               ],
             },
@@ -70,7 +76,7 @@ const DataConnectionEditor: FC = () => {
         return { newValue, options: TRUE_VALIDATION_RESULT };
       });
     },
-    [apiUrl, setValue]
+    [setValue]
   );
 
   // Initialize defaults
