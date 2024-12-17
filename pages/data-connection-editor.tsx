@@ -8,8 +8,8 @@ import {
 import { VerticalRhythm } from "@uniformdev/design-system";
 
 export type DataSourceConfig = {
-  apiUrl: string;
-  apiToken: string;
+  apiUrl?: string;
+  apiToken?: string;
 };
 
 export type DataSourceCustomPublicConfig = Pick<
@@ -49,9 +49,13 @@ const DataConnectionEditor: FC = () => {
         };
 
         // Ensure baseUrl ends correctly
-        const sanitizedBaseUrl = newConfig.apiUrl.endsWith("/")
-          ? newConfig.apiUrl.slice(0, -1)
-          : newConfig.apiUrl;
+        const sanitizedBaseUrl =
+          newConfig &&
+          newConfig.apiUrl &&
+          newConfig.apiUrl.length > 0 &&
+          newConfig.apiUrl.endsWith("/")
+            ? newConfig.apiUrl.slice(0, -1)
+            : newConfig.apiUrl;
 
         const newValue: DataSourceLocationValue = {
           ...current,

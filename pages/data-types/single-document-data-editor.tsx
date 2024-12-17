@@ -1,21 +1,22 @@
-import React from 'react';
+import React from "react";
 import {
   useMeshLocation,
   DataResourceDynamicInputProvider,
   Callout,
   LoadingOverlay,
-} from '@uniformdev/mesh-sdk-react';
+} from "@uniformdev/mesh-sdk-react";
 
-import { SingleDocumentTypeConfig } from '../../components/SingleDocumentTypeEditor';
-import { DocumentSelector } from '../../components/DocumentSelector';
-import { DataSourceCustomPublicConfig } from '../data-connection-editor';
+import { SingleDocumentTypeConfig } from "../../components/SingleDocumentTypeEditor";
+import { DocumentSelector } from "../../components/DocumentSelector";
+import { DataSourceCustomPublicConfig } from "../data-connection-editor";
 // Removed the import of useGetAvailableContentTypes
 // import { useGetAvailableContentTypes } from '../../hooks/useGetAvailableContentTypes';
-import { ErrorCallout } from '../../components/ErrorCallout';
-import { useAsync } from 'react-use';
+import { ErrorCallout } from "../../components/ErrorCallout";
+import { useAsync } from "react-use";
 
 const DataEditorInner: React.FC = () => {
-  const { value, metadata, getDataResource } = useMeshLocation<'dataResource'>();
+  const { value, metadata, getDataResource } =
+    useMeshLocation<"dataResource">();
 
   interface ContentType {
     uid: string;
@@ -23,12 +24,12 @@ const DataEditorInner: React.FC = () => {
     pluralName: string;
   }
 
-  const { apiUrl = '', apiToken = '' } = (metadata.dataSource.customPublic ??
+  const { apiUrl = "", apiToken = "" } = (metadata.dataSource.customPublic ??
     {}) as Partial<DataSourceCustomPublicConfig>;
 
   const {
     allowedContentTypes = [],
-    displayField = 'title',
+    displayField = "title",
     imageField,
   } = (metadata.dataType.custom as unknown as SingleDocumentTypeConfig) || {};
 
@@ -41,7 +42,7 @@ const DataEditorInner: React.FC = () => {
     error: availableContentTypesError,
   } = useAsync(async () => {
     if (!apiUrl || !apiToken) {
-      throw new Error('Strapi API configuration is missing');
+      throw new Error("Strapi API configuration is missing");
     }
 
     if (!getDataResource) {
@@ -51,12 +52,12 @@ const DataEditorInner: React.FC = () => {
     const response = await getDataResource({
       headers: [
         {
-          key: 'Authorization',
+          key: "Authorization",
           value: `Bearer ${apiToken}`,
         },
       ],
-      path: '/content-type-builder/content-types',
-      method: 'GET' as const,
+      path: "/content-type-builder/content-types",
+      method: "GET" as const,
     });
 
     const data = (response as { data: any }).data;
@@ -70,10 +71,10 @@ const DataEditorInner: React.FC = () => {
     const contentTypes = data
       .map((item: any) => ({
         uid: item.uid,
-        displayName: item.schema?.displayName || 'Unknown',
-        pluralName: item.schema?.pluralName || 'Unknown',
+        displayName: item.schema?.displayName || "Unknown",
+        pluralName: item.schema?.pluralName || "Unknown",
       }))
-      .filter((ct: ContentType) => ct.uid && !ct.uid.startsWith('admin::'));
+      .filter((ct: ContentType) => ct.uid && !ct.uid.startsWith("admin::"));
 
     return contentTypes;
   }, [getDataResource, apiUrl, apiToken]);
@@ -84,10 +85,18 @@ const DataEditorInner: React.FC = () => {
     allowedContentTypes.length > 0
       ? allowedContentTypes.map((allowed) => {
           // Adjust matching to handle UID structure differences
-          const match = availableContentTypes.find((ct) => ct.uid.endsWith(`.${allowed}`));
-          return match?.pluralName || match?.displayName || 'Unknown';
+          const match = availableContentTypes.find(
+            (ct) =>
+              ct &&
+              ct.uid &&
+              ct.uid.length > 0 &&
+              ct.uid.endsWith(`.${allowed}`)
+          );
+          return match?.pluralName || match?.displayName || "Unknown";
         })
-      : availableContentTypes.map((ct) => ct.pluralName || ct.displayName || 'Unknown');
+      : availableContentTypes.map(
+          (ct) => ct.pluralName || ct.displayName || "Unknown"
+        );
 
   if (loadingAvailableContentTypes) {
     return <LoadingOverlay isActive />;
@@ -108,7 +117,9 @@ const DataEditorInner: React.FC = () => {
         apiUrl={apiUrl}
         apiToken={apiToken}
         allowedContentTypes={
-          allowedContentTypes.length ? allowedContentTypes : availableContentTypes.map((ct) => ct.uid)
+          allowedContentTypes.length
+            ? allowedContentTypes
+            : availableContentTypes.map((ct) => ct.uid)
         }
         allowedContentTypesNames={allowedContentTypesNames}
         documentIds={selectedIds}

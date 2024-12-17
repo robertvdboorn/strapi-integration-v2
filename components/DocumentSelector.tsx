@@ -1,12 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { useAsync } from 'react-use';
+import React, { useState, useEffect } from "react";
+import { useAsync } from "react-use";
 import {
   LoadingOverlay,
   Callout,
   useMeshLocation,
   GetDataResourceLocation,
-} from '@uniformdev/mesh-sdk-react';
-import { VerticalRhythm } from '@uniformdev/design-system';
+} from "@uniformdev/mesh-sdk-react";
+import { VerticalRhythm } from "@uniformdev/design-system";
 
 interface ContentType {
   uid: string;
@@ -15,7 +15,7 @@ interface ContentType {
 }
 
 interface DocumentSelectorProps {
-  getDataResource?: GetDataResourceLocation['getDataResource'];
+  getDataResource?: GetDataResourceLocation["getDataResource"];
   apiUrl: string;
   apiToken: string;
   allowedContentTypes: string[];
@@ -52,7 +52,7 @@ export const DocumentSelector: React.FC<DocumentSelectorProps> = ({
   imageField,
 }) => {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
-  const { setValue } = useMeshLocation('dataResource');
+  const { setValue } = useMeshLocation("dataResource");
   const [allEntries, setAllEntries] = useState<StrapiEntry[]>([]);
 
   useEffect(() => {
@@ -61,12 +61,19 @@ export const DocumentSelector: React.FC<DocumentSelectorProps> = ({
     }
   }, [allowedContentTypes]);
 
-  const selectedContentType = selectedIndex !== null ? allowedContentTypes[selectedIndex] : '';
+  const selectedContentType =
+    selectedIndex !== null ? allowedContentTypes[selectedIndex] : "";
   const selectedPluralName =
-    selectedIndex !== null ? (allowedContentTypesNames ? allowedContentTypesNames[selectedIndex] : '') : '';
+    selectedIndex !== null
+      ? allowedContentTypesNames
+        ? allowedContentTypesNames[selectedIndex]
+        : ""
+      : "";
 
   // Fetch all entries based on the selected content type
-  const fetchAllEntries = async (pluralName: string): Promise<StrapiEntry[]> => {
+  const fetchAllEntries = async (
+    pluralName: string
+  ): Promise<StrapiEntry[]> => {
     if (!getDataResource) return [];
 
     let allEntries: StrapiEntry[] = [];
@@ -74,19 +81,24 @@ export const DocumentSelector: React.FC<DocumentSelectorProps> = ({
     let hasMorePages = true;
 
     while (hasMorePages) {
-      const response: { data?: StrapiEntry[]; meta?: { pagination: PaginationInfo } } = await getDataResource({
+      const response: {
+        data?: StrapiEntry[];
+        meta?: { pagination: PaginationInfo };
+      } = await getDataResource({
         headers: [
           {
-            key: 'Authorization',
+            key: "Authorization",
             value: `Bearer ${apiToken}`,
           },
         ],
         path: `/${pluralName}?populate=*&pagination[page]=${currentPage}&pagination[pageSize]=100`,
-        method: 'GET' as const,
+        method: "GET" as const,
       });
 
       if (!response?.data) {
-        throw new Error('Failed to fetch entries or unexpected response structure');
+        throw new Error(
+          "Failed to fetch entries or unexpected response structure"
+        );
       }
 
       allEntries = [...allEntries, ...response.data];
@@ -102,15 +114,13 @@ export const DocumentSelector: React.FC<DocumentSelectorProps> = ({
     return allEntries;
   };
 
-  const {
-    loading: loadingEntries,
-    error: errorEntries,
-  } = useAsync(async () => {
-    if (!selectedPluralName) return;
+  const { loading: loadingEntries, error: errorEntries } =
+    useAsync(async () => {
+      if (!selectedPluralName) return;
 
-    const entries = await fetchAllEntries(selectedPluralName);
-    setAllEntries(entries);
-  }, [getDataResource, apiToken, selectedPluralName]);
+      const entries = await fetchAllEntries(selectedPluralName);
+      setAllEntries(entries);
+    }, [getDataResource, apiToken, selectedPluralName]);
 
   // Fetch available content types directly within the component
   const {
@@ -119,7 +129,7 @@ export const DocumentSelector: React.FC<DocumentSelectorProps> = ({
     error: errorContentTypes,
   } = useAsync(async () => {
     if (!apiUrl || !apiToken) {
-      throw new Error('Strapi API configuration is missing');
+      throw new Error("Strapi API configuration is missing");
     }
 
     if (!getDataResource) {
@@ -129,12 +139,12 @@ export const DocumentSelector: React.FC<DocumentSelectorProps> = ({
     const response = await getDataResource({
       headers: [
         {
-          key: 'Authorization',
+          key: "Authorization",
           value: `Bearer ${apiToken}`,
         },
       ],
-      path: '/content-type-builder/content-types',
-      method: 'GET',
+      path: "/content-type-builder/content-types",
+      method: "GET",
     });
 
     const data = (response as { data: any }).data;
@@ -148,10 +158,10 @@ export const DocumentSelector: React.FC<DocumentSelectorProps> = ({
     const contentTypes = data
       .map((item: any) => ({
         uid: item.uid,
-        displayName: item.schema?.displayName || 'Unknown',
-        pluralName: item.schema?.pluralName || 'Unknown',
+        displayName: item.schema?.displayName || "Unknown",
+        pluralName: item.schema?.pluralName || "Unknown",
       }))
-      .filter((ct: ContentType) => ct.uid && !ct.uid.startsWith('admin::'));
+      .filter((ct: ContentType) => ct.uid && !ct.uid.startsWith("admin::"));
 
     return contentTypes;
   }, [getDataResource, apiUrl, apiToken]);
@@ -166,23 +176,26 @@ export const DocumentSelector: React.FC<DocumentSelectorProps> = ({
   };
 
   const getEditLink = (uid: string, id: string) => {
-    const contentTypeIds = availableContentTypes.filter((ct) => ct.uid.endsWith(`.${uid}`));
+    const contentTypeIds = availableContentTypes.filter(
+      (ct) => ct && ct.uid && ct.uid.length > 0 && ct.uid.endsWith(`.${uid}`)
+    );
     if (contentTypeIds.length === 0) {
-      return '';
+      return "";
     }
 
-    return `${apiUrl.replace('/api', '')}/admin/content-manager/collection-types/${
-      contentTypeIds[0].uid
-    }/${id}`;
+    return `${apiUrl.replace(
+      "/api",
+      ""
+    )}/admin/content-manager/collection-types/${contentTypeIds[0].uid}/${id}`;
   };
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleString(undefined, {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
       hour12: true,
     });
   };
@@ -195,7 +208,9 @@ export const DocumentSelector: React.FC<DocumentSelectorProps> = ({
     return (
       <VerticalRhythm>
         <Callout type="error">
-          {errorEntries?.message ?? errorContentTypes?.message ?? 'An unknown error occurred'}
+          {errorEntries?.message ??
+            errorContentTypes?.message ??
+            "An unknown error occurred"}
         </Callout>
       </VerticalRhythm>
     );
@@ -204,28 +219,31 @@ export const DocumentSelector: React.FC<DocumentSelectorProps> = ({
   return (
     <VerticalRhythm>
       {allowedContentTypes.length > 1 && (
-        <div style={{ marginBottom: '15px' }}>
-          <label htmlFor="content-type-select" style={{ display: 'block', marginBottom: '5px' }}>
+        <div style={{ marginBottom: "15px" }}>
+          <label
+            htmlFor="content-type-select"
+            style={{ display: "block", marginBottom: "5px" }}
+          >
             Select a content type:
           </label>
           <select
             id="content-type-select"
             onChange={(e) => setSelectedIndex(Number(e.target.value))}
-            value={selectedIndex ?? ''}
+            value={selectedIndex ?? ""}
             style={{
-              width: '100%',
-              padding: '8px',
-              borderRadius: '4px',
-              border: '1px solid #ccc',
+              width: "100%",
+              padding: "8px",
+              borderRadius: "4px",
+              border: "1px solid #ccc",
             }}
           >
             <option value="">Select a content type</option>
             {allowedContentTypesNames?.map((name, index) => (
               <option key={allowedContentTypes[index]} value={index}>
                 {name
-                  .split(' ')
+                  .split(" ")
                   .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-                  .join(' ')}
+                  .join(" ")}
               </option>
             ))}
           </select>
@@ -234,51 +252,57 @@ export const DocumentSelector: React.FC<DocumentSelectorProps> = ({
 
       <div
         style={{
-          maxHeight: '360px',
-          overflowY: 'auto',
-          border: '1px solid #ccc',
-          borderRadius: '4px',
-          padding: '8px',
+          maxHeight: "360px",
+          overflowY: "auto",
+          border: "1px solid #ccc",
+          borderRadius: "4px",
+          padding: "8px",
         }}
       >
         {allEntries.map((entry) => (
           <div
             key={entry.documentId}
             style={{
-              padding: '10px',
-              border: documentIds?.includes(entry.documentId) ? '1px solid #007BFF' : '1px solid transparent',
-              borderRadius: '4px',
-              backgroundColor: documentIds?.includes(entry.documentId) ? '#F0F8FF' : '#FFFFFF',
-              marginBottom: '8px',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
+              padding: "10px",
+              border: documentIds?.includes(entry.documentId)
+                ? "1px solid #007BFF"
+                : "1px solid transparent",
+              borderRadius: "4px",
+              backgroundColor: documentIds?.includes(entry.documentId)
+                ? "#F0F8FF"
+                : "#FFFFFF",
+              marginBottom: "8px",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
             }}
           >
             <div
               onClick={() => handleEntrySelection(entry)}
               style={{
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
                 flex: 1,
               }}
             >
               {imageField && entry[imageField] && (
                 <img
                   src={entry[imageField]?.url}
-                  alt={entry[displayField] || 'Entry image'}
+                  alt={entry[displayField] || "Entry image"}
                   width={50}
                   height={50}
-                  style={{ marginRight: '10px', borderRadius: '4px' }}
+                  style={{ marginRight: "10px", borderRadius: "4px" }}
                 />
               )}
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <span>{entry[displayField] || 'Untitled'}</span>
-                <span style={{ fontSize: '0.75em', color: '#666' }}>
+              <div style={{ display: "flex", flexDirection: "column" }}>
+                <span>{entry[displayField] || "Untitled"}</span>
+                <span style={{ fontSize: "0.75em", color: "#666" }}>
                   Last published: {formatDate(entry.publishedAt)}
                 </span>
-                <span style={{ fontSize: '0.75em', color: '#666' }}>Document ID: {entry.documentId}</span>
+                <span style={{ fontSize: "0.75em", color: "#666" }}>
+                  Document ID: {entry.documentId}
+                </span>
               </div>
             </div>
             <a
@@ -286,10 +310,10 @@ export const DocumentSelector: React.FC<DocumentSelectorProps> = ({
               target="_blank"
               rel="noopener noreferrer"
               style={{
-                color: '#007BFF',
-                textDecoration: 'none',
-                fontWeight: 'bold',
-                marginLeft: '10px',
+                color: "#007BFF",
+                textDecoration: "none",
+                fontWeight: "bold",
+                marginLeft: "10px",
               }}
             >
               Edit
