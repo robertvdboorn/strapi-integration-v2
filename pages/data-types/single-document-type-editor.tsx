@@ -291,7 +291,7 @@ const SingleDocumentTypeEditorPage: React.FC = () => {
               onClick={() => removeContentType(index)}
               style={{ marginTop: "10px" }}
             >
-              Remove Content Type
+              Delete
             </Button>
           </div>
         </details>
