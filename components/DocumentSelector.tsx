@@ -11,6 +11,8 @@ import { VerticalRhythm } from "@uniformdev/design-system";
 interface ContentType {
   uid: string;
   displayName: string;
+  imageField: string;
+  singleName: string;
   pluralName: string;
 }
 
@@ -18,12 +20,15 @@ interface DocumentSelectorProps {
   getDataResource?: GetDataResourceLocation["getDataResource"];
   apiUrl: string;
   apiToken: string;
-  allowedContentTypes: string[];
-  allowedContentTypesNames?: { uid: any; displayName: any; pluralName: any }[];
+  allowedContentTypes: {
+    uid: string;
+    displayName: string;
+    singleName: string;
+    pluralName: string;
+    imageField?: string;
+    displayField?: string;
+  }[];
   documentIds?: string[];
-  multiSelect: boolean;
-  displayField: string;
-  imageField?: string;
   selectedIds: number[];
 }
 
@@ -46,10 +51,7 @@ export const DocumentSelector: React.FC<DocumentSelectorProps> = ({
   apiUrl,
   apiToken,
   allowedContentTypes,
-  allowedContentTypesNames,
   documentIds,
-  displayField,
-  imageField,
 }) => {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const { setValue } = useMeshLocation("dataResource");
@@ -63,13 +65,35 @@ export const DocumentSelector: React.FC<DocumentSelectorProps> = ({
   }, [allowedContentTypes]);
 
   const selectedContentType =
-    selectedIndex !== null ? allowedContentTypes[selectedIndex] : "";
+    selectedIndex !== null
+      ? allowedContentTypes[selectedIndex]
+      : {
+          uid: "",
+          displayName: "",
+          singleName: "",
+          pluralName: "",
+          imageField: "",
+          displayField: "",
+        };
   const selectedEntry =
     selectedIndex !== null
-      ? allowedContentTypesNames
-        ? allowedContentTypesNames[selectedIndex]
-        : { uid: "", displayName: "", pluralName: "" }
-      : { uid: "", displayName: "", pluralName: "" };
+      ? allowedContentTypes
+        ? allowedContentTypes[selectedIndex]
+        : {
+            uid: "",
+            displayName: "",
+            singleName: "",
+            pluralName: "",
+            imageField: "",
+            displayField: "",
+          }
+      : {
+          uid: "",
+          displayName: "",
+          pluralName: "",
+          imageField: "",
+          displayField: "",
+        };
 
   // Fetch all entries based on the selected content type
   const fetchAllEntries = async (
@@ -166,7 +190,7 @@ export const DocumentSelector: React.FC<DocumentSelectorProps> = ({
     const loadEntries = async () => {
       if (!selectedEntry || !selectedEntry.pluralName) return;
       if (selectedEntry.pluralName.length < 1) return;
-
+      console.log("Fetching entries for", selectedEntry.pluralName);
       const entries = await fetchAllEntries(selectedEntry.pluralName);
       setAllEntries(entries);
     };
@@ -174,15 +198,17 @@ export const DocumentSelector: React.FC<DocumentSelectorProps> = ({
     loadEntries().catch((err) => {
       console.error(err);
     });
-  }, [selectedEntry]);
+  }, [selectedIndex]);
 
   const handleEntrySelection = (entry: StrapiEntry) => {
+    console.log("Selected entry", entry);
+    console.log("Selected content type", selectedContentType);
     setValue((current) => {
       return {
         ...current,
         newValue: {
           id: entry.documentId,
-          contentTypePluralName: selectedEntry.pluralName,
+          contentTypePluralName: selectedContentType.pluralName,
         },
       };
     });
@@ -266,8 +292,11 @@ export const DocumentSelector: React.FC<DocumentSelectorProps> = ({
               }}
             >
               <option value="">Select a content type</option>
-              {allowedContentTypesNames?.map((entryType, index) => (
-                <option key={allowedContentTypes[index]} value={index}>
+              {allowedContentTypes?.map((entryType, index) => (
+                <option
+                  key={allowedContentTypes[index].displayName}
+                  value={index}
+                >
                   {entryType.displayName}
                 </option>
               ))}
@@ -335,17 +364,20 @@ export const DocumentSelector: React.FC<DocumentSelectorProps> = ({
                     flex: 1,
                   }}
                 >
-                  {imageField && entry[imageField] && (
-                    <img
-                      src={entry[imageField]?.url}
-                      alt={entry[displayField] || "Entry image"}
-                      width={50}
-                      height={50}
-                      style={{ marginRight: "10px", borderRadius: "4px" }}
-                    />
-                  )}
+                  {selectedEntry.imageField &&
+                    entry[selectedEntry.imageField] && (
+                      <img
+                        src={entry[selectedEntry.imageField]?.url}
+                        alt={entry[selectedEntry.displayField] || "Entry image"}
+                        width={50}
+                        height={50}
+                        style={{ marginRight: "10px", borderRadius: "4px" }}
+                      />
+                    )}
                   <div style={{ display: "flex", flexDirection: "column" }}>
-                    <span>{entry[displayField] || "Untitled"}</span>
+                    <span>
+                      {entry[selectedEntry.displayField] || "Untitled"}
+                    </span>
                     <span style={{ fontSize: "0.75em", color: "#666" }}>
                       Last published: {formatDate(entry.publishedAt)}
                     </span>
@@ -355,7 +387,7 @@ export const DocumentSelector: React.FC<DocumentSelectorProps> = ({
                   </div>
                 </div>
                 <a
-                  href={getEditLink(selectedContentType, entry.documentId)}
+                  href={getEditLink(selectedContentType.uid, entry.documentId)}
                   target="_blank"
                   rel="noopener noreferrer"
                   style={{

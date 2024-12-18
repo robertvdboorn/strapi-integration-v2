@@ -25,25 +25,8 @@ const DataEditorInner: React.FC = () => {
   const { apiUrl = "", apiToken = "" } = (metadata.dataSource.customPublic ??
     {}) as Partial<DataSourceCustomPublicConfig>;
 
-  const {
-    contentTypes = "[]",
-    displayField = "title",
-    imageField,
-  } = (metadata.dataType.custom as unknown as SingleDocumentTypeConfig) || {};
-
-  // Parse the JSON string for contentTypes
-  let parsedContentTypes: { single: string; plural: string }[] = [];
-  try {
-    parsedContentTypes = JSON.parse(contentTypes);
-    if (!Array.isArray(parsedContentTypes)) {
-      parsedContentTypes = [];
-      console.error("contentTypes is not a valid JSON array");
-    }
-  } catch (error) {
-    console.error("Failed to parse contentTypes JSON:", error);
-    parsedContentTypes = [];
-  }
-
+  const config = metadata.dataType as unknown as SingleDocumentTypeConfig;
+  const { contentTypes } = config.custom;
   const id = value.id;
 
   const {
@@ -70,14 +53,16 @@ const DataEditorInner: React.FC = () => {
       method: "GET" as const,
     });
 
+    console.log("response", response);
     const data = (response as { data: any }).data;
 
     if (!Array.isArray(data)) {
       throw new Error('Unexpected API response format: "data" is not an array');
     }
 
+    console.log("data", data);
     // Map the content types
-    const contentTypes = data
+    const strapiTypes = data
       .map((item: any) => ({
         uid: item.uid,
         displayName: item.schema?.displayName || "Unknown",
@@ -85,29 +70,25 @@ const DataEditorInner: React.FC = () => {
       }))
       .filter((ct: ContentType) => ct.uid && !ct.uid.startsWith("admin::"));
 
-    return contentTypes;
+    return strapiTypes;
   }, [getDataResource, apiUrl, apiToken]);
 
   // Match the provided contentTypes (from config) with the availableContentTypes from Strapi
-  const allowedContentTypesUids = parsedContentTypes
-    .map((ct) => {
-      const found = availableContentTypes.find(
-        (act) => act.pluralName === ct.plural
-      );
-      return found?.uid;
-    })
-    .filter((uid): uid is string => !!uid);
+  if (contentTypes.length === 0 || availableContentTypes.length === 0) {
+    return <></>;
+  }
 
-  const allowedContentTypesNames = parsedContentTypes
-    .map((ct) => {
-      const found = availableContentTypes.find(
-        (act) => act.pluralName === ct.plural
-      );
-      return found;
-    })
-    .filter(
-      (name) => !!name && !!name.displayName && !!name.pluralName && !!name.uid
-    );
+  const allowedContentTypes = contentTypes.map((ct) => {
+    const found = availableContentTypes
+      .filter(
+        (name) =>
+          !!name && !!name.displayName && !!name.pluralName && !!name.uid
+      )
+      .find((act) => act.pluralName === ct.pluralTypeName);
+    ct.uid = found?.uid;
+    return ct;
+  });
+
   const selectedIds = id ? [id] : [];
 
   if (loadingAvailableContentTypes) {
@@ -122,20 +103,25 @@ const DataEditorInner: React.FC = () => {
     return <ErrorCallout error={availableContentTypesError.message} />;
   }
 
+  const transformedContentTypes = allowedContentTypes.map((ct) => {
+    return {
+      uid: ct.uid,
+      displayName: ct.friendlyTypeName,
+      singleName: ct.singleTypeName,
+      pluralName: ct.pluralTypeName,
+      imageField: ct.imageField,
+      displayField: ct.displayField,
+    };
+  });
+
   return (
     <>
       <DocumentSelector
         getDataResource={getDataResource}
         apiUrl={apiUrl}
         apiToken={apiToken}
-        // Use the matched UIDs (allowedContentTypesUids) to restrict which docs can be selected
-        allowedContentTypes={allowedContentTypesUids}
-        // Provide human-friendly plural names for display (allowedContentTypesNames)
-        allowedContentTypesNames={allowedContentTypesNames}
+        allowedContentTypes={transformedContentTypes}
         documentIds={selectedIds}
-        multiSelect={false}
-        displayField={displayField}
-        imageField={imageField}
         selectedIds={[]}
       />
     </>

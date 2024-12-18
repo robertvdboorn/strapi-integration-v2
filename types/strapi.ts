@@ -14,12 +14,17 @@ export interface StrapiIntegrationConfig {
   apiToken: string;
 }
 
-export interface SingleDocumentTypeConfig {
-  contentTypes: string;
-  displayField: string;
+export interface ContentTypeConfig {
+  uid?: string;
+  friendlyTypeName: string;
+  singleTypeName: string;
+  pluralTypeName: string;
+  displayField?: string;
   imageField?: string;
 }
 
-export interface MultiDocumentTypeConfig extends SingleDocumentTypeConfig {
-  maxItems?: number;
+export interface SingleDocumentTypeConfig {
+  custom: {
+    contentTypes: ContentTypeConfig[];
+  };
 }

@@ -78,6 +78,12 @@ const DataConnectionEditor: FC = () => {
                   value: "draft",
                 },
               ],
+              headers: [
+                {
+                  key: "Authorization",
+                  value: `Bearer ${newConfig.apiToken}`,
+                },
+              ],
             },
           },
         };
