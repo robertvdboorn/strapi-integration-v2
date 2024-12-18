@@ -15,7 +15,7 @@ export interface StrapiIntegrationConfig {
 }
 
 export interface SingleDocumentTypeConfig {
-  allowedContentTypes: string[];
+  contentTypes: string;
   displayField: string;
   imageField?: string;
 }

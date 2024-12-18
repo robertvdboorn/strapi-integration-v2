@@ -1,6 +1,6 @@
 {
   "name": "@uniformdev/mesh-app-strapi-2",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "scripts": {
     "dev": "next dev --port 4062",
     "build": "next build",
@@ -13,9 +13,9 @@
     "clean": "rimraf .next && rimraf out && rimraf .swc"
   },
   "dependencies": {
-    "@uniformdev/canvas": "19.207.0",
-    "@uniformdev/design-system": "19.207.0",
-    "@uniformdev/mesh-sdk-react": "19.207.0",
+    "@uniformdev/canvas": "19.210.2",
+    "@uniformdev/design-system": "19.210.2",
+    "@uniformdev/mesh-sdk-react": "19.210.2",
     "next": "13.5.6",
     "react": "18.2.0",
     "react-dom": "18.2.0",

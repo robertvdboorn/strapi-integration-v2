@@ -60,6 +60,12 @@ const DataConnectionEditor: FC = () => {
         const newValue: DataSourceLocationValue = {
           ...current,
           baseUrl: `${sanitizedBaseUrl}/api`,
+          headers: [
+            {
+              key: "Authorization",
+              value: `Bearer ${newConfig.apiToken}`,
+            },
+          ],
           custom: newConfig,
           customPublic,
           enableUnpublishedMode: true,

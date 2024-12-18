@@ -6,11 +6,9 @@ import {
   LoadingOverlay,
 } from "@uniformdev/mesh-sdk-react";
 
-import { SingleDocumentTypeConfig } from "../../components/SingleDocumentTypeEditor";
+import { SingleDocumentTypeConfig } from "../../types/strapi";
 import { DocumentSelector } from "../../components/DocumentSelector";
 import { DataSourceCustomPublicConfig } from "../data-connection-editor";
-// Removed the import of useGetAvailableContentTypes
-// import { useGetAvailableContentTypes } from '../../hooks/useGetAvailableContentTypes';
 import { ErrorCallout } from "../../components/ErrorCallout";
 import { useAsync } from "react-use";
 
@@ -28,14 +26,26 @@ const DataEditorInner: React.FC = () => {
     {}) as Partial<DataSourceCustomPublicConfig>;
 
   const {
-    allowedContentTypes = [],
+    contentTypes = "[]",
     displayField = "title",
     imageField,
   } = (metadata.dataType.custom as unknown as SingleDocumentTypeConfig) || {};
 
+  // Parse the JSON string for contentTypes
+  let parsedContentTypes: { single: string; plural: string }[] = [];
+  try {
+    parsedContentTypes = JSON.parse(contentTypes);
+    if (!Array.isArray(parsedContentTypes)) {
+      parsedContentTypes = [];
+      console.error("contentTypes is not a valid JSON array");
+    }
+  } catch (error) {
+    console.error("Failed to parse contentTypes JSON:", error);
+    parsedContentTypes = [];
+  }
+
   const id = value.id;
 
-  // Inline the logic of useGetAvailableContentTypes
   const {
     value: availableContentTypes = [],
     loading: loadingAvailableContentTypes,
@@ -62,12 +72,11 @@ const DataEditorInner: React.FC = () => {
 
     const data = (response as { data: any }).data;
 
-    // Validate that "data" is an array
     if (!Array.isArray(data)) {
       throw new Error('Unexpected API response format: "data" is not an array');
     }
 
-    // Map the content types to include pluralName
+    // Map the content types
     const contentTypes = data
       .map((item: any) => ({
         uid: item.uid,
@@ -79,24 +88,27 @@ const DataEditorInner: React.FC = () => {
     return contentTypes;
   }, [getDataResource, apiUrl, apiToken]);
 
-  const selectedIds = id ? [id] : [];
+  // Match the provided contentTypes (from config) with the availableContentTypes from Strapi
+  const allowedContentTypesUids = parsedContentTypes
+    .map((ct) => {
+      const found = availableContentTypes.find(
+        (act) => act.pluralName === ct.plural
+      );
+      return found?.uid;
+    })
+    .filter((uid): uid is string => !!uid);
 
-  const allowedContentTypesNames =
-    allowedContentTypes.length > 0
-      ? allowedContentTypes.map((allowed) => {
-          // Adjust matching to handle UID structure differences
-          const match = availableContentTypes.find(
-            (ct) =>
-              ct &&
-              ct.uid &&
-              ct.uid.length > 0 &&
-              ct.uid.endsWith(`.${allowed}`)
-          );
-          return match?.pluralName || match?.displayName || "Unknown";
-        })
-      : availableContentTypes.map(
-          (ct) => ct.pluralName || ct.displayName || "Unknown"
-        );
+  const allowedContentTypesNames = parsedContentTypes
+    .map((ct) => {
+      const found = availableContentTypes.find(
+        (act) => act.pluralName === ct.plural
+      );
+      return found;
+    })
+    .filter(
+      (name) => !!name && !!name.displayName && !!name.pluralName && !!name.uid
+    );
+  const selectedIds = id ? [id] : [];
 
   if (loadingAvailableContentTypes) {
     return <LoadingOverlay isActive />;
@@ -116,11 +128,9 @@ const DataEditorInner: React.FC = () => {
         getDataResource={getDataResource}
         apiUrl={apiUrl}
         apiToken={apiToken}
-        allowedContentTypes={
-          allowedContentTypes.length
-            ? allowedContentTypes
-            : availableContentTypes.map((ct) => ct.uid)
-        }
+        // Use the matched UIDs (allowedContentTypesUids) to restrict which docs can be selected
+        allowedContentTypes={allowedContentTypesUids}
+        // Provide human-friendly plural names for display (allowedContentTypesNames)
         allowedContentTypesNames={allowedContentTypesNames}
         documentIds={selectedIds}
         multiSelect={false}

@@ -19,7 +19,7 @@ interface DocumentSelectorProps {
   apiUrl: string;
   apiToken: string;
   allowedContentTypes: string[];
-  allowedContentTypesNames?: string[];
+  allowedContentTypesNames?: { uid: any; displayName: any; pluralName: any }[];
   documentIds?: string[];
   multiSelect: boolean;
   displayField: string;
@@ -54,6 +54,7 @@ export const DocumentSelector: React.FC<DocumentSelectorProps> = ({
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const { setValue } = useMeshLocation("dataResource");
   const [allEntries, setAllEntries] = useState<StrapiEntry[]>([]);
+  const [isEntriesLoading, setIsEntriesLoading] = useState(false);
 
   useEffect(() => {
     if (allowedContentTypes.length === 1) {
@@ -63,18 +64,19 @@ export const DocumentSelector: React.FC<DocumentSelectorProps> = ({
 
   const selectedContentType =
     selectedIndex !== null ? allowedContentTypes[selectedIndex] : "";
-  const selectedPluralName =
+  const selectedEntry =
     selectedIndex !== null
       ? allowedContentTypesNames
         ? allowedContentTypesNames[selectedIndex]
-        : ""
-      : "";
+        : { uid: "", displayName: "", pluralName: "" }
+      : { uid: "", displayName: "", pluralName: "" };
 
   // Fetch all entries based on the selected content type
   const fetchAllEntries = async (
     pluralName: string
   ): Promise<StrapiEntry[]> => {
     if (!getDataResource) return [];
+    setIsEntriesLoading(true);
 
     let allEntries: StrapiEntry[] = [];
     let currentPage = 1;
@@ -96,6 +98,7 @@ export const DocumentSelector: React.FC<DocumentSelectorProps> = ({
       });
 
       if (!response?.data) {
+        setIsEntriesLoading(false);
         throw new Error(
           "Failed to fetch entries or unexpected response structure"
         );
@@ -111,18 +114,10 @@ export const DocumentSelector: React.FC<DocumentSelectorProps> = ({
       }
     }
 
+    setIsEntriesLoading(false);
     return allEntries;
   };
 
-  const { loading: loadingEntries, error: errorEntries } =
-    useAsync(async () => {
-      if (!selectedPluralName) return;
-
-      const entries = await fetchAllEntries(selectedPluralName);
-      setAllEntries(entries);
-    }, [getDataResource, apiToken, selectedPluralName]);
-
-  // Fetch available content types directly within the component
   const {
     value: availableContentTypes = [],
     loading: loadingContentTypes,
@@ -166,19 +161,38 @@ export const DocumentSelector: React.FC<DocumentSelectorProps> = ({
     return contentTypes;
   }, [getDataResource, apiUrl, apiToken]);
 
+  // Fetch entries when selectedEntry changes
+  useEffect(() => {
+    const loadEntries = async () => {
+      if (!selectedEntry || !selectedEntry.pluralName) return;
+      if (selectedEntry.pluralName.length < 1) return;
+
+      const entries = await fetchAllEntries(selectedEntry.pluralName);
+      setAllEntries(entries);
+    };
+
+    loadEntries().catch((err) => {
+      console.error(err);
+    });
+  }, [selectedEntry]);
+
   const handleEntrySelection = (entry: StrapiEntry) => {
-    setValue((current) => ({
-      ...current,
-      newValue: {
-        id: entry.documentId,
-      },
-    }));
+    setValue((current) => {
+      return {
+        ...current,
+        newValue: {
+          id: entry.documentId,
+          contentTypePluralName: selectedEntry.pluralName,
+        },
+      };
+    });
   };
 
   const getEditLink = (uid: string, id: string) => {
     const contentTypeIds = availableContentTypes.filter(
-      (ct) => ct && ct.uid && ct.uid.length > 0 && ct.uid.endsWith(`.${uid}`)
+      (ct) => ct && ct.uid && ct.uid.length > 0 && ct.uid === uid
     );
+
     if (contentTypeIds.length === 0) {
       return "";
     }
@@ -200,17 +214,15 @@ export const DocumentSelector: React.FC<DocumentSelectorProps> = ({
     });
   };
 
-  if (loadingEntries || loadingContentTypes) {
+  if (loadingContentTypes) {
     return <LoadingOverlay isActive />;
   }
 
-  if (errorEntries || errorContentTypes) {
+  if (errorContentTypes) {
     return (
       <VerticalRhythm>
         <Callout type="error">
-          {errorEntries?.message ??
-            errorContentTypes?.message ??
-            "An unknown error occurred"}
+          {errorContentTypes?.message ?? "An unknown error occurred"}
         </Callout>
       </VerticalRhythm>
     );
@@ -222,105 +234,154 @@ export const DocumentSelector: React.FC<DocumentSelectorProps> = ({
         <div style={{ marginBottom: "15px" }}>
           <label
             htmlFor="content-type-select"
-            style={{ display: "block", marginBottom: "5px" }}
+            style={{
+              display: "block",
+              marginBottom: "5px",
+              fontWeight: "bold",
+            }}
           >
             Select a content type:
           </label>
-          <select
-            id="content-type-select"
-            onChange={(e) => setSelectedIndex(Number(e.target.value))}
-            value={selectedIndex ?? ""}
-            style={{
-              width: "100%",
-              padding: "8px",
-              borderRadius: "4px",
-              border: "1px solid #ccc",
-            }}
-          >
-            <option value="">Select a content type</option>
-            {allowedContentTypesNames?.map((name, index) => (
-              <option key={allowedContentTypes[index]} value={index}>
-                {name
-                  .split(" ")
-                  .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-                  .join(" ")}
-              </option>
-            ))}
-          </select>
+          <div style={{ position: "relative" }}>
+            <select
+              id="content-type-select"
+              onChange={(e) => setSelectedIndex(Number(e.target.value))}
+              value={selectedIndex ?? ""}
+              style={{
+                width: "100%",
+                padding: "10px 40px 10px 10px",
+                borderRadius: "4px",
+                border: "1px solid #ccc",
+                backgroundColor: "#fff",
+                fontSize: "0.9em",
+                color: "#333",
+                appearance: "none",
+                backgroundImage:
+                  'url("data:image/svg+xml,%3Csvg%20width%3D%2210%22%20height%3D%226%22%20viewBox%3D%220%200%2010%206%22%20fill%3D%22none%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%3E%3Cpath%20d%3D%22M0.763672%200.613281C0.436523%200.942708%200.436523%201.46094%200.763672%201.78906L4.61328%205.63672C4.94043%205.96484%205.45898%205.96484%205.78613%205.63672L9.63672%201.78906C9.96387%201.46094%209.96387%200.942708%209.63672%200.613281C9.30957%200.285156%208.79102%200.285156%208.46387%200.613281L5.2%203.87695L1.93652%200.613281C1.60938%200.285156%201.09082%200.285156%200.763672%200.613281Z%22%20fill%3D%22%23777777%22/%3E%3C/svg%3E")',
+                backgroundRepeat: "no-repeat",
+                backgroundPosition: "right 10px center",
+                backgroundSize: "10px 6px",
+                cursor: "pointer",
+                transition: "border-color 0.2s ease",
+              }}
+            >
+              <option value="">Select a content type</option>
+              {allowedContentTypesNames?.map((entryType, index) => (
+                <option key={allowedContentTypes[index]} value={index}>
+                  {entryType.displayName}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      )}
+      {selectedIndex !== null && selectedEntry && selectedEntry.pluralName && (
+        <div
+          style={{
+            maxHeight: "360px",
+            overflowY: "auto",
+            border: "1px solid #ccc",
+            borderRadius: "4px",
+            padding: "8px",
+            position: "relative",
+          }}
+        >
+          {isEntriesLoading ? (
+            <div
+              style={{
+                display: "flex",
+                height: "100%",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <div
+                className="spinner"
+                style={{
+                  width: "30px",
+                  height: "30px",
+                  border: "4px solid #ccc",
+                  borderTop: "4px solid #007BFF",
+                  borderRadius: "50%",
+                  animation: "spin 1s linear infinite",
+                }}
+              />
+            </div>
+          ) : (
+            allEntries.map((entry) => (
+              <div
+                key={entry.documentId}
+                style={{
+                  padding: "10px",
+                  border: documentIds?.includes(entry.documentId)
+                    ? "1px solid #007BFF"
+                    : "1px solid transparent",
+                  borderRadius: "4px",
+                  backgroundColor: documentIds?.includes(entry.documentId)
+                    ? "#F0F8FF"
+                    : "#FFFFFF",
+                  marginBottom: "8px",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
+              >
+                <div
+                  onClick={() => handleEntrySelection(entry)}
+                  style={{
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    flex: 1,
+                  }}
+                >
+                  {imageField && entry[imageField] && (
+                    <img
+                      src={entry[imageField]?.url}
+                      alt={entry[displayField] || "Entry image"}
+                      width={50}
+                      height={50}
+                      style={{ marginRight: "10px", borderRadius: "4px" }}
+                    />
+                  )}
+                  <div style={{ display: "flex", flexDirection: "column" }}>
+                    <span>{entry[displayField] || "Untitled"}</span>
+                    <span style={{ fontSize: "0.75em", color: "#666" }}>
+                      Last published: {formatDate(entry.publishedAt)}
+                    </span>
+                    <span style={{ fontSize: "0.75em", color: "#666" }}>
+                      Document ID: {entry.documentId}
+                    </span>
+                  </div>
+                </div>
+                <a
+                  href={getEditLink(selectedContentType, entry.documentId)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    color: "#007BFF",
+                    textDecoration: "none",
+                    fontWeight: "bold",
+                    marginLeft: "10px",
+                  }}
+                >
+                  Edit
+                </a>
+              </div>
+            ))
+          )}
         </div>
       )}
 
-      <div
-        style={{
-          maxHeight: "360px",
-          overflowY: "auto",
-          border: "1px solid #ccc",
-          borderRadius: "4px",
-          padding: "8px",
-        }}
-      >
-        {allEntries.map((entry) => (
-          <div
-            key={entry.documentId}
-            style={{
-              padding: "10px",
-              border: documentIds?.includes(entry.documentId)
-                ? "1px solid #007BFF"
-                : "1px solid transparent",
-              borderRadius: "4px",
-              backgroundColor: documentIds?.includes(entry.documentId)
-                ? "#F0F8FF"
-                : "#FFFFFF",
-              marginBottom: "8px",
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
-            <div
-              onClick={() => handleEntrySelection(entry)}
-              style={{
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                flex: 1,
-              }}
-            >
-              {imageField && entry[imageField] && (
-                <img
-                  src={entry[imageField]?.url}
-                  alt={entry[displayField] || "Entry image"}
-                  width={50}
-                  height={50}
-                  style={{ marginRight: "10px", borderRadius: "4px" }}
-                />
-              )}
-              <div style={{ display: "flex", flexDirection: "column" }}>
-                <span>{entry[displayField] || "Untitled"}</span>
-                <span style={{ fontSize: "0.75em", color: "#666" }}>
-                  Last published: {formatDate(entry.publishedAt)}
-                </span>
-                <span style={{ fontSize: "0.75em", color: "#666" }}>
-                  Document ID: {entry.documentId}
-                </span>
-              </div>
-            </div>
-            <a
-              href={getEditLink(selectedContentType, entry.documentId)}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                color: "#007BFF",
-                textDecoration: "none",
-                fontWeight: "bold",
-                marginLeft: "10px",
-              }}
-            >
-              Edit
-            </a>
-          </div>
-        ))}
-      </div>
+      {/* Simple inline CSS for spinner animation */}
+      <style>
+        {`
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        `}
+      </style>
     </VerticalRhythm>
   );
 };
